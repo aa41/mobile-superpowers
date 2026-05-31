@@ -1,0 +1,45 @@
+{
+  "name": "mobile-superpowers",
+  "version": "0.1.0",
+  "description": "Personal mobile app workflows for requirements, design, review, and verification.",
+  "author": {
+    "name": "mxc"
+  },
+  "homepage": "https://github.com/obra/superpowers",
+  "repository": "https://github.com/obra/superpowers",
+  "license": "MIT",
+  "keywords": [
+    "mobile",
+    "skills",
+    "ios",
+    "android",
+    "flutter",
+    "react-native",
+    "ux",
+    "brainstorming"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Mobile Superpowers",
+    "shortDescription": "Mobile app workflow skills for coding agents",
+    "longDescription": "Personal skills for mobile app design, multi-agent brainstorming, requirements discipline, and verification in Claude Code and Codex.",
+    "developerName": "mxc",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "I want to design a mobile app feature.",
+      "Let's improve this mobile screen."
+    ],
+    "websiteURL": "https://github.com/obra/superpowers",
+    "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+    "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
+    "brandColor": "#14B8A6",
+    "composerIcon": "./assets/mobile-superpowers-small.svg",
+    "logo": "./assets/mobile-superpowers-small.svg",
+    "screenshots": []
+  }
+}

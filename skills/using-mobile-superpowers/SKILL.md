@@ -90,6 +90,7 @@ When multiple skills apply, use the earliest workflow gate:
 unclear idea -> mobile-brainstorming
 visual direction or mockup -> mobile-visual-design
 approved spec -> mobile-writing-plans
+UI-heavy spec without visual contract -> mobile-visual-design
 approved plan before edits -> mobile-using-git-worktrees
 execute approved plan -> mobile-executing-plans
 implementation task -> mobile-test-driven-development

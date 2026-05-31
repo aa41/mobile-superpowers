@@ -13,6 +13,7 @@ from typing import Any, Callable
 DEFAULT_WIDTH = 390
 DEFAULT_HEIGHT = 844
 DEFAULT_TIMEOUT = 30
+DEFAULT_VIRTUAL_TIME_BUDGET = 12000
 MAC_BROWSER_PATHS = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
@@ -49,8 +50,9 @@ def build_browser_command(
     screenshot_path: Path,
     width: int,
     height: int,
+    virtual_time_budget: int = DEFAULT_VIRTUAL_TIME_BUDGET,
 ) -> list[str]:
-    return [
+    command = [
         browser_cmd,
         "--headless=new",
         "--disable-gpu",
@@ -58,9 +60,11 @@ def build_browser_command(
         "--no-first-run",
         "--no-default-browser-check",
         f"--window-size={width},{height}",
-        f"--screenshot={screenshot_path}",
-        baseline_html.resolve().as_uri(),
     ]
+    if virtual_time_budget > 0:
+        command.append(f"--virtual-time-budget={virtual_time_budget}")
+    command.extend([f"--screenshot={screenshot_path}", baseline_html.resolve().as_uri()])
+    return command
 
 
 def replace_section(text: str, section: str, replacement_lines: list[str]) -> str:
@@ -109,6 +113,7 @@ def capture_screenshot(
     width: int = DEFAULT_WIDTH,
     height: int = DEFAULT_HEIGHT,
     timeout: int = DEFAULT_TIMEOUT,
+    virtual_time_budget: int = DEFAULT_VIRTUAL_TIME_BUDGET,
     dry_run: bool = False,
     runner: Callable[..., subprocess.CompletedProcess] = subprocess.run,
 ) -> dict[str, Any]:
@@ -131,6 +136,7 @@ def capture_screenshot(
         screenshot_path=screenshot_path,
         width=width,
         height=height,
+        virtual_time_budget=virtual_time_budget,
     )
 
     result: dict[str, Any] = {
@@ -141,6 +147,7 @@ def capture_screenshot(
         "visual_contract": str(contract_path),
         "browser": browser_cmd,
         "viewport": {"width": width, "height": height},
+        "virtual_time_budget": virtual_time_budget,
         "command": command,
         "validation": {"errors": errors, "warnings": []},
     }
@@ -177,6 +184,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH)
     parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT)
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
+    parser.add_argument("--virtual-time-budget", type=int, default=DEFAULT_VIRTUAL_TIME_BUDGET)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--json", action="store_true", dest="json_output")
     return parser.parse_args()
@@ -191,6 +199,7 @@ def main() -> int:
         width=args.width,
         height=args.height,
         timeout=args.timeout,
+        virtual_time_budget=args.virtual_time_budget,
         dry_run=args.dry_run,
     )
     if args.json_output:

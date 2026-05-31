@@ -58,6 +58,27 @@ class MobileFlutterWebVerifyTests(unittest.TestCase):
         self.assertIn("platform-metrics.json", result["metrics"])
         self.assertIn("verification-report.md", result["report"])
 
+    def test_url_screenshot_command_waits_for_flutter_first_frame(self) -> None:
+        module = load_module()
+
+        command = module.build_url_screenshot_command(
+            browser_cmd="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            url="http://127.0.0.1:8765/",
+            screenshot_path=self.project_dir / "screen.png",
+            width=390,
+            height=844,
+        )
+
+        joined = " ".join(command)
+        self.assertIn("--window-size=390,844", joined)
+        self.assertIn("--virtual-time-budget=12000", joined)
+        self.assertEqual(command[-1], "http://127.0.0.1:8765/")
+
+    def test_default_capture_uses_cdp_mobile_metrics(self) -> None:
+        module = load_module()
+
+        self.assertIs(module.verify_flutter_web.__kwdefaults__["capture"], module.capture_url_screenshot_cdp)
+
     def test_execute_with_fake_adapters_runs_pipeline(self) -> None:
         module = load_module()
         calls: list[str] = []
@@ -74,7 +95,7 @@ class MobileFlutterWebVerifyTests(unittest.TestCase):
             return {"validation": {"errors": []}, "screenshot": str(kwargs["screenshot_path"])}
 
         def fake_compare(**kwargs):
-            metrics = Path(kwargs["out_dir"]) / "platform-metrics.json"
+            metrics = Path(kwargs["out_dir"]) / "baseline-metrics.json"
             metrics.write_text(
                 json.dumps(
                     {
@@ -94,6 +115,8 @@ class MobileFlutterWebVerifyTests(unittest.TestCase):
             return {"validation": {"errors": []}, "metrics": str(metrics), "regions": [{"name": "full"}]}
 
         def fake_report(**kwargs):
+            self.assertTrue(Path(kwargs["metrics"]).exists())
+            self.assertIn("baseline-metrics.json", str(kwargs["metrics"]))
             report = Path(kwargs["out_dir"]) / "verification-report.md"
             report.write_text("# report\n", encoding="utf-8")
             return {"validation": {"errors": []}, "report": str(report), "assessment": "VERIFIED_WITH_DEVIATIONS"}

@@ -141,6 +141,8 @@ def verify_android(
         prefix="platform",
     )
     result["compare"] = compare_result
+    metrics_path = Path(compare_result.get("metrics", metrics_path)).expanduser().resolve()
+    result["metrics"] = str(metrics_path)
     result["validation"]["errors"].extend(compare_result.get("validation", {}).get("errors", []))
     if result["validation"]["errors"]:
         return result

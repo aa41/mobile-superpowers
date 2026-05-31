@@ -77,7 +77,7 @@ class MobileAndroidVerifyTests(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
 
         def fake_compare(**kwargs):
-            metrics = Path(kwargs["out_dir"]) / "platform-metrics.json"
+            metrics = Path(kwargs["out_dir"]) / "baseline-metrics.json"
             metrics.write_text(
                 json.dumps(
                     {
@@ -97,6 +97,8 @@ class MobileAndroidVerifyTests(unittest.TestCase):
             return {"validation": {"errors": []}, "metrics": str(metrics), "regions": [{"name": "full"}]}
 
         def fake_report(**kwargs):
+            self.assertTrue(Path(kwargs["metrics"]).exists())
+            self.assertIn("baseline-metrics.json", str(kwargs["metrics"]))
             report = Path(kwargs["out_dir"]) / "verification-report.md"
             report.write_text("# report\n", encoding="utf-8")
             return {"validation": {"errors": []}, "report": str(report), "assessment": "VERIFIED_WITH_DEVIATIONS"}

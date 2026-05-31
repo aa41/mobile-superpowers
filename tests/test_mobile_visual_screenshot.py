@@ -66,6 +66,7 @@ class MobileVisualScreenshotTests(unittest.TestCase):
         joined = " ".join(command)
         self.assertIn("--headless", joined)
         self.assertIn("--window-size=390,844", joined)
+        self.assertIn("--virtual-time-budget=12000", joined)
         self.assertIn("--screenshot=", joined)
         self.assertIn(self.baseline.resolve().as_uri(), command[-1])
 

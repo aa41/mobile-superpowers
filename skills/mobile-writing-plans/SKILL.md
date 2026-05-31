@@ -12,7 +12,9 @@ Convert an approved mobile spec into executable tasks. The plan must preserve mo
 <HARD-GATE>
 Do not write implementation code while creating the plan.
 
-Do not create a plan from an unapproved idea. You need an approved written spec. If the work is UI-heavy and has no visual contract, consider `mobile-visual-design` before planning.
+Do not create a plan from an unapproved idea. You need an approved written spec.
+
+If the work is UI-heavy and has no visual contract, use `mobile-visual-design` before planning. Do not merely "consider" it. A UI-heavy mobile feature needs either an approved visual contract or an explicit user override recorded in the plan.
 </HARD-GATE>
 
 ## Inputs Required
@@ -29,6 +31,16 @@ Do not create a plan from an unapproved idea. You need an approved written spec.
   - reference screenshot/mockup
 
 If any required input is missing, ask one question or inspect the repo. Do not invent commands, paths, or platform architecture.
+
+## UI-Heavy Visual Gate
+
+Before writing a plan for screens, flows, dashboards, visualizations, games, maps, charts, or 3D/animated UI:
+
+1. Check whether a `visual-contract.md` exists.
+2. If absent, stop and use `mobile-visual-design`.
+3. If the user explicitly overrides visual design, record the override in the plan header and include a manual visual verification task.
+
+Do not proceed directly from a text spec to Flutter/Android/iOS implementation for visually significant screens.
 
 ## Save Plans To
 

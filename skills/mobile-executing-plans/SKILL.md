@@ -19,6 +19,8 @@ Do not execute from an idea or draft. You need an approved written plan from `mo
 
 Before editing, use `mobile-using-git-worktrees` unless the user explicitly says to work in the current checkout.
 
+If the plan is UI-heavy and has no visual contract or recorded user override, stop and return to `mobile-visual-design` or `mobile-writing-plans`. Do not silently implement visually significant UI from text alone.
+
 Before implementation steps that change behavior or UI, use `mobile-test-driven-development`.
 
 ## Step 1: Load And Challenge The Plan

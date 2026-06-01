@@ -32,15 +32,16 @@ Do not use when:
 ## Workflow
 
 1. Collect the minimum visual brief.
-2. Select provider strategy.
-3. Generate or reconstruct the reference visual.
-4. Build or request an HTML baseline.
-5. Screenshot the HTML baseline.
-6. Compare the HTML screenshot with the original reference or approved mockup.
-7. Iterate until the baseline is acceptable or document remaining differences.
-8. Record asset strategy for photos, avatars, product imagery, brand marks, complex illustrations, textures, glass effects, and dense charts.
-9. Write `visual-contract.md`.
-10. Hand off to `mobile-writing-plans` only after the contract exists.
+2. Discover project UI constraints when the prompt or repo mentions base components, theme rules, `AGENTS.md`, `CLAUDE.md`, or a style skill.
+3. Select provider strategy.
+4. Generate or reconstruct the reference visual.
+5. Build or request an HTML baseline.
+6. Screenshot the HTML baseline.
+7. Compare the HTML screenshot with the original reference or approved mockup.
+8. Iterate until the baseline is acceptable or document remaining differences.
+9. Record asset strategy for photos, avatars, product imagery, brand marks, complex illustrations, textures, glass effects, and dense charts.
+10. Write `visual-contract.md`.
+11. Hand off to `mobile-writing-plans` only after the contract exists.
 
 ## Visual Brief
 
@@ -92,6 +93,29 @@ python3 mobile-superpowers/scripts/mobile_visual_config.py --print
 ```
 
 See `config-reference.md` for supported providers and config keys.
+
+## Project Constraint Discovery
+
+If the user says "接入该 skill", "使用项目中的 CommonDialog/CommonText", "遵循 AGENTS.md/CLAUDE.md", or names a project `SKILL.md`, create a compact constraint file before visual generation or reconstruction:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_project_constraints.py \
+  --project-dir "<project-dir>" \
+  --style-skill "<optional/path/to/SKILL.md>"
+```
+
+This writes `docs/mobile-superpowers/project-constraints.md`. Use that file as the context boundary; do not paste full `AGENTS.md`, `CLAUDE.md`, or a full style skill into prompts.
+
+Create the visual workspace with the constraint binding:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_visual_artifacts.py \
+  --topic "<topic>" \
+  --project-constraints "docs/mobile-superpowers/project-constraints.md" \
+  --style-skill "<optional/path/to/SKILL.md>"
+```
+
+HTML baselines cannot instantiate Flutter/Android/iOS widgets directly. When project constraints require base components, mark mapped HTML elements with semantic attributes such as `data-platform-component="CommonText"`, `data-platform-component="CommonButton"`, or `data-platform-component="CommonDialog"` so platform implementation can preserve the contract.
 
 ## HTML Baseline Requirement
 
@@ -152,6 +176,7 @@ Create a mockup-to-HTML reconstruction bundle:
 ```bash
 python3 mobile-superpowers/scripts/mobile_visual_reconstruct.py \
   --metadata "docs/mobile-superpowers/visual/<date-topic>/generated-mockup.png.json" \
+  --project-constraints "docs/mobile-superpowers/project-constraints.md" \
   --force
 ```
 
@@ -162,6 +187,7 @@ To let a multimodal model read the generated mockup and write the actual HTML ba
 ```bash
 python3 mobile-superpowers/scripts/mobile_visual_reconstruct.py \
   --metadata "docs/mobile-superpowers/visual/<date-topic>/generated-mockup.png.json" \
+  --project-constraints "docs/mobile-superpowers/project-constraints.md" \
   --force \
   --execute \
   --vision-model gpt-5.5

@@ -42,11 +42,29 @@ def replace_section(text: str, section: str, replacement_lines: list[str]) -> st
     return text[:start] + replacement + text[next_start:]
 
 
-def reconstruction_prompt(*, metadata: dict[str, Any], mockup_path: Path, baseline_path: Path) -> str:
+def read_compact_constraints(path: Path | None, limit: int = 6000) -> str:
+    if not path:
+        return "none"
+    if not path.exists():
+        return f"missing: {path}"
+    text = path.read_text(encoding="utf-8", errors="replace").strip()
+    if len(text) <= limit:
+        return text
+    return text[:limit].rstrip() + "\n\n...[truncated: read the source file for complete constraints]"
+
+
+def reconstruction_prompt(
+    *,
+    metadata: dict[str, Any],
+    mockup_path: Path,
+    baseline_path: Path,
+    project_constraints: Path | None = None,
+) -> str:
     request = metadata.get("request", {})
     prompt = request.get("prompt", "")
     size = request.get("size", "")
     aspect_ratio = request.get("aspect_ratio", "")
+    constraints_text = read_compact_constraints(project_constraints)
     return f"""# Mobile HTML Reconstruction Prompt
 
 ## Source
@@ -56,6 +74,11 @@ def reconstruction_prompt(*, metadata: dict[str, Any], mockup_path: Path, baseli
 - Original visual prompt: {prompt}
 - Requested size: `{size}`
 - Aspect ratio: `{aspect_ratio}`
+- Project constraints: `{project_constraints if project_constraints else "none"}`
+
+## Project Constraints
+
+{constraints_text}
 
 ## Task
 
@@ -66,6 +89,7 @@ Code these elements with HTML/CSS:
 - Layout, spacing, cards, buttons, input fields, bottom bars, and readable text.
 - Simple icons that can be represented with CSS, inline SVG, or text-safe placeholders.
 - Typography hierarchy, line-height, text block width, and mobile safe area behavior.
+- Semantic placeholders for required platform components. Use `data-platform-component="CommonText"` for text mapped to project text components, `data-platform-component="CommonButton"` for action controls, and `data-platform-component="CommonDialog"` for modal/dialog surfaces when the project contract requires them.
 
 Treat these as assets instead of forcing CSS:
 
@@ -192,6 +216,7 @@ def update_visual_contract(
     baseline_path: Path,
     prompt_path: Path,
     mockup_path: Path,
+    project_constraints: Path | None = None,
 ) -> None:
     if not contract_path.exists():
         return
@@ -203,8 +228,17 @@ def update_visual_contract(
             f"- Baseline HTML: `{baseline_path}`",
             f"- Reconstruction prompt: `{prompt_path}`",
             f"- Generated mockup: `{mockup_path}`",
+            f"- Project constraints: `{project_constraints if project_constraints else 'none'}`",
             "- Screenshot status: not captured after reconstruction yet.",
             "- Similarity metrics status: not captured after reconstruction yet.",
+        ],
+    )
+    updated = replace_section(
+        updated,
+        "Project Constraints",
+        [
+            f"- Project constraints: `{project_constraints if project_constraints else 'none'}`",
+            "- HTML reconstruction must preserve project component semantics with `data-platform-component` attributes when constraints require base components.",
         ],
     )
     contract_path.write_text(updated, encoding="utf-8")
@@ -354,7 +388,12 @@ def execute_vision_reconstruction(
     return result
 
 
-def create_reconstruction_bundle(*, metadata_path: Path | str, force: bool = False) -> dict[str, Any]:
+def create_reconstruction_bundle(
+    *,
+    metadata_path: Path | str,
+    force: bool = False,
+    project_constraints: Path | str | None = None,
+) -> dict[str, Any]:
     metadata_path = Path(metadata_path).expanduser().resolve()
     metadata = read_metadata(metadata_path)
     workspace = Path(str(metadata.get("workspace", metadata_path.parent))).expanduser().resolve()
@@ -362,13 +401,21 @@ def create_reconstruction_bundle(*, metadata_path: Path | str, force: bool = Fal
     prompt_path = workspace / "reconstruction-prompt.md"
     baseline_path = workspace / "baseline.html"
     contract_path = workspace / "visual-contract.md"
+    project_constraints_path = Path(project_constraints).expanduser().resolve() if project_constraints else None
 
     errors = list(metadata.get("validation", {}).get("errors", []))
     if not mockup_path.exists():
         errors.append(f"mockup image not found: {mockup_path}")
+    if project_constraints_path and not project_constraints_path.exists():
+        errors.append(f"project constraints not found: {project_constraints_path}")
 
     prompt_path.write_text(
-        reconstruction_prompt(metadata=metadata, mockup_path=mockup_path, baseline_path=baseline_path),
+        reconstruction_prompt(
+            metadata=metadata,
+            mockup_path=mockup_path,
+            baseline_path=baseline_path,
+            project_constraints=project_constraints_path,
+        ),
         encoding="utf-8",
     )
     if force or not baseline_path.exists():
@@ -382,6 +429,7 @@ def create_reconstruction_bundle(*, metadata_path: Path | str, force: bool = Fal
         baseline_path=baseline_path,
         prompt_path=prompt_path,
         mockup_path=mockup_path,
+        project_constraints=project_constraints_path,
     )
 
     return {
@@ -390,6 +438,7 @@ def create_reconstruction_bundle(*, metadata_path: Path | str, force: bool = Fal
         "prompt": str(prompt_path),
         "baseline_html": str(baseline_path),
         "visual_contract": str(contract_path),
+        "project_constraints": str(project_constraints_path) if project_constraints_path else None,
         "validation": {"errors": errors, "warnings": list(metadata.get("validation", {}).get("warnings", []))},
     }
 
@@ -398,6 +447,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create a mockup-to-HTML reconstruction bundle.")
     parser.add_argument("--metadata", type=Path, required=True)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--project-constraints", type=Path, default=None)
     parser.add_argument("--execute", action="store_true", help="Call the configured vision provider to write baseline.html.")
     parser.add_argument("--project-dir", type=Path, default=Path.cwd())
     parser.add_argument("--home-dir", type=Path, default=Path.home(), help=argparse.SUPPRESS)
@@ -409,7 +459,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    result = create_reconstruction_bundle(metadata_path=args.metadata, force=args.force)
+    result = create_reconstruction_bundle(
+        metadata_path=args.metadata,
+        force=args.force,
+        project_constraints=args.project_constraints,
+    )
     if args.execute and not result["validation"]["errors"]:
         config = resolve_config(project_dir=args.project_dir, home_dir=args.home_dir, config_path=args.config)
         api_key = resolve_secret_value(

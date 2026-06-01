@@ -85,6 +85,24 @@ class MobileVisualReconstructTests(unittest.TestCase):
         self.assertIn("reconstruction-prompt.md", text)
         self.assertIn("baseline.html", text)
 
+    def test_project_constraints_are_included_in_prompt_and_contract(self) -> None:
+        constraints = self.workspace / "project-constraints.md"
+        constraints.write_text(
+            "# Mobile Project Constraints\n\n- Use `CommonText` for visible text.\n- Forbidden: `Text(`.\n",
+            encoding="utf-8",
+        )
+        module = load_module()
+
+        result = module.create_reconstruction_bundle(metadata_path=self.metadata, project_constraints=constraints)
+
+        prompt = Path(result["prompt"]).read_text(encoding="utf-8")
+        contract = self.contract.read_text(encoding="utf-8")
+        self.assertIn("Project Constraints", prompt)
+        self.assertIn("CommonText", prompt)
+        self.assertIn('data-platform-component="CommonText"', prompt)
+        self.assertIn("project-constraints.md", contract)
+        self.assertEqual(result["project_constraints"], str(constraints.resolve()))
+
     def test_existing_baseline_is_not_overwritten_without_force(self) -> None:
         baseline = self.workspace / "baseline.html"
         baseline.write_text("custom baseline", encoding="utf-8")

@@ -11,6 +11,7 @@ from typing import Any
 
 CONTRACT_SECTIONS = [
     "Source Inputs",
+    "Project Constraints",
     "Target Platform Assumptions",
     "HTML Baseline",
     "Screenshot And Metrics",
@@ -38,7 +39,13 @@ def titleize(value: str) -> str:
     return " ".join(part[:1].upper() + part[1:] for part in cleaned.split()) or "Mobile Visual"
 
 
-def contract_scaffold(topic: str, workspace: Path, artifacts: dict[str, str]) -> str:
+def contract_scaffold(
+    topic: str,
+    workspace: Path,
+    artifacts: dict[str, str],
+    project_constraints: Path | None = None,
+    style_skill: Path | None = None,
+) -> str:
     title = titleize(topic)
     lines = [
         f"# {title} Visual Contract",
@@ -53,7 +60,17 @@ def contract_scaffold(topic: str, workspace: Path, artifacts: dict[str, str]) ->
     lines.append("")
     for section in CONTRACT_SECTIONS:
         lines.extend([f"## {section}", ""])
-        if section == "Asset Strategy":
+        if section == "Project Constraints":
+            lines.extend(
+                [
+                    f"- Project constraints: `{project_constraints if project_constraints else 'none'}`",
+                    f"- Style skill binding: `{style_skill if style_skill else 'none'}`",
+                    "- If present, read the compact project constraints before HTML reconstruction and platform implementation.",
+                    "- HTML baseline elements should use `data-platform-component` for mapped project components such as `CommonText`, `CommonButton`, or `CommonDialog`.",
+                    "",
+                ]
+            )
+        elif section == "Asset Strategy":
             lines.extend(
                 [
                     "- Use `code` for layout primitives, cards, buttons, simple dividers, simple backgrounds, and text.",
@@ -80,11 +97,15 @@ def create_visual_workspace(
     topic: str,
     date: str | None = None,
     force: bool = False,
+    project_constraints: Path | str | None = None,
+    style_skill: Path | str | None = None,
 ) -> dict[str, Any]:
     project_dir = Path(project_dir).expanduser().resolve()
     day = date or globals()["date"].today().isoformat()
     workspace = project_dir / "docs" / "mobile-superpowers" / "visual" / f"{day}-{slugify(topic)}"
     workspace.mkdir(parents=True, exist_ok=True)
+    project_constraints_path = Path(project_constraints).expanduser().resolve() if project_constraints else None
+    style_skill_path = Path(style_skill).expanduser().resolve() if style_skill else None
 
     artifacts = {
         "reference": str(workspace / "reference.png"),
@@ -94,10 +115,23 @@ def create_visual_workspace(
         "baseline_metrics": str(workspace / "baseline-metrics.json"),
         "visual_contract": str(workspace / "visual-contract.md"),
     }
+    if project_constraints_path:
+        artifacts["project_constraints"] = str(project_constraints_path)
+    if style_skill_path:
+        artifacts["style_skill"] = str(style_skill_path)
 
     contract = Path(artifacts["visual_contract"])
     if force or not contract.exists():
-        contract.write_text(contract_scaffold(topic, workspace, artifacts), encoding="utf-8")
+        contract.write_text(
+            contract_scaffold(
+                topic,
+                workspace,
+                artifacts,
+                project_constraints=project_constraints_path,
+                style_skill=style_skill_path,
+            ),
+            encoding="utf-8",
+        )
 
     manifest = workspace / "artifacts.json"
     manifest.write_text(
@@ -114,6 +148,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--topic", required=True)
     parser.add_argument("--date", default=None)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--project-constraints", type=Path, default=None)
+    parser.add_argument("--style-skill", type=Path, default=None)
     parser.add_argument("--json", action="store_true", dest="json_output")
     return parser.parse_args()
 
@@ -125,6 +161,8 @@ def main() -> int:
         topic=args.topic,
         date=args.date,
         force=args.force,
+        project_constraints=args.project_constraints,
+        style_skill=args.style_skill,
     )
     if args.json_output:
         print(json.dumps(result, indent=2))

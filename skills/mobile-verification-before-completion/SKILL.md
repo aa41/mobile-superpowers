@@ -49,7 +49,20 @@ If UI changed, use `mobile-ui-verification` or equivalent evidence:
 
 No screenshot means no visual fidelity claim.
 
-### 4. Artifact And Secret Hygiene
+### 4. Project Component Contract
+
+If the plan, visual contract, prompt, `AGENTS.md`, `CLAUDE.md`, or project constraints require base components, verify they were used. For Flutter:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_component_contract_check.py \
+  --project-dir "<project-dir>" \
+  --platform flutter \
+  --contract "docs/mobile-superpowers/project-constraints.md"
+```
+
+Report any violations. Do not claim completion while feature UI still uses forbidden direct primitives such as raw `Text(`, `AlertDialog`, direct buttons, or hard-coded `Color(0x...)` unless the exception is explicitly approved.
+
+### 5. Artifact And Secret Hygiene
 
 Check:
 
@@ -58,7 +71,7 @@ Check:
 - Build artifacts are not accidentally staged.
 - `git status --short` is understood.
 
-### 5. Final Statement
+### 6. Final Statement
 
 Use one of these assessments:
 
@@ -79,6 +92,7 @@ After `VERIFIED` or `VERIFIED_WITH_DEVIATIONS`, use `mobile-requesting-code-revi
 - Commands run:
   - `<command>` -> `<result>`
 - UI evidence: `<report/screenshot paths or none>`
+- Component contract: `<passed / not applicable / violations>`
 - State coverage: `<covered / non-goals / blocked>`
 - Artifacts: `<kept / cleaned / needs review>`
 - Secrets check: `<result>`
@@ -93,3 +107,4 @@ After `VERIFIED` or `VERIFIED_WITH_DEVIATIONS`, use `mobile-requesting-code-revi
 - "I cannot run the simulator, but it should be okay."
 - "No need to check git status."
 - "The provider key is only in docs temporarily."
+- "The project says CommonText, but raw Text is visually equivalent."

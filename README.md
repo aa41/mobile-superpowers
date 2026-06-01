@@ -117,6 +117,64 @@ python3 mobile-superpowers/scripts/mobile_visual_deps.py --install
 python3 mobile-superpowers/scripts/mobile_visual_compare.py --reference "docs/mobile-superpowers/visual/<date-topic>/reference.png" --candidate "docs/mobile-superpowers/visual/<date-topic>/baseline-screenshot.png"
 ```
 
+## Project UI Constraints
+
+Users can ask the agent to bind project UI rules directly in the prompt:
+
+```text
+请使用 mobile-superpowers，并接入项目中的 AGENTS.md/CLAUDE.md 组件约束。
+所有弹窗必须用 CommonDialog，所有文本必须用 CommonText，按钮必须用 CommonButton。
+请先生成 project-constraints.md，再进入 mobile-visual-design 设计 Profile 页面。
+```
+
+```text
+请使用 mobile-superpowers，并使用 skills/project-style/SKILL.md 作为页面设计约束。
+先生成 HTML baseline，再转换为 Flutter，Flutter 实现必须遵循 CommonText/CommonDialog/AppColors。
+```
+
+Generate a compact constraint file instead of pasting full project instructions into model prompts:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_project_constraints.py \
+  --project-dir "<project-dir>" \
+  --style-skill "<optional/path/to/SKILL.md>"
+```
+
+This writes:
+
+```text
+docs/mobile-superpowers/project-constraints.md
+```
+
+Create visual artifacts with the constraint binding:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_visual_artifacts.py \
+  --topic "Profile Screen" \
+  --project-constraints "docs/mobile-superpowers/project-constraints.md" \
+  --style-skill "<optional/path/to/SKILL.md>"
+```
+
+Pass the same compact file into HTML reconstruction:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_visual_reconstruct.py \
+  --metadata "docs/mobile-superpowers/visual/<date-topic>/generated-mockup.png.json" \
+  --project-constraints "docs/mobile-superpowers/project-constraints.md" \
+  --force
+```
+
+HTML baselines use semantic mappings such as `data-platform-component="CommonText"` because HTML cannot instantiate Flutter/Android/iOS components directly. Platform implementation plans then carry those mappings into Flutter, Android, or iOS tasks.
+
+For Flutter projects, check direct-use violations before completion:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_component_contract_check.py \
+  --project-dir "<flutter-project>" \
+  --platform flutter \
+  --contract "docs/mobile-superpowers/project-constraints.md"
+```
+
 Provider execution is explicit. Use `--dry-run` for metadata only, or `--execute` to call an OpenAI-compatible `/images/generations` endpoint. Execution may spend provider credits. GPT image generation defaults to `gpt-image-2`.
 
 After `generated-mockup.png` exists, the multimodal HTML reconstruction adapter can call an OpenAI-compatible `/chat/completions` endpoint and write the returned HTML into `baseline.html`:
@@ -139,7 +197,8 @@ python3 mobile-superpowers/scripts/mobile_plan_scaffold.py \
   --platform Flutter \
   --spec "docs/specs/profile.md" \
   --visual-contract "docs/mobile-superpowers/visual/<date-topic>/visual-contract.md" \
-  --assets "docs/mobile-superpowers/visual/<date-topic>/assets.json"
+  --assets "docs/mobile-superpowers/visual/<date-topic>/assets.json" \
+  --project-constraints "docs/mobile-superpowers/project-constraints.md"
 ```
 
 Create a verification report after platform screenshots and metrics exist:

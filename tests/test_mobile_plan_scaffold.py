@@ -57,6 +57,12 @@ class MobilePlanScaffoldTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
+        self.constraints = self.project_dir / "docs" / "mobile-superpowers" / "project-constraints.md"
+        self.constraints.parent.mkdir(parents=True, exist_ok=True)
+        self.constraints.write_text(
+            "# Mobile Project Constraints\n\n- Use `CommonText` and `CommonDialog`.\n",
+            encoding="utf-8",
+        )
 
     def test_create_plan_scaffold_includes_asset_matrix(self) -> None:
         module = load_module()
@@ -68,6 +74,7 @@ class MobilePlanScaffoldTests(unittest.TestCase):
             spec="docs/specs/profile.md",
             visual_contract=self.contract,
             assets=self.assets,
+            project_constraints=self.constraints,
             date="2026-05-31",
         )
 
@@ -81,6 +88,10 @@ class MobilePlanScaffoldTests(unittest.TestCase):
         self.assertIn("pubspec.yaml", text)
         self.assertIn("Task 1: Prepare Visual Assets", text)
         self.assertIn("assets/images/hero-background.png", text)
+        self.assertIn("**Project Constraints:**", text)
+        self.assertIn("## Project Component Contract", text)
+        self.assertIn("mobile_component_contract_check.py", text)
+        self.assertIn("project-constraints.md", text)
 
     def test_cli_outputs_json(self) -> None:
         completed = subprocess.run(
@@ -99,6 +110,8 @@ class MobilePlanScaffoldTests(unittest.TestCase):
                 str(self.contract),
                 "--assets",
                 str(self.assets),
+                "--project-constraints",
+                str(self.constraints),
                 "--date",
                 "2026-05-31",
                 "--json",

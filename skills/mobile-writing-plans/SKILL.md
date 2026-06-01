@@ -29,6 +29,10 @@ If the work is UI-heavy and has no visual contract, use `mobile-visual-design` b
   - visual contract
   - assets.json
   - reference screenshot/mockup
+- Project constraints, if any:
+  - `docs/mobile-superpowers/project-constraints.md`
+  - named project style `SKILL.md`
+  - required base components such as `CommonText`, `CommonDialog`, `CommonButton`, `AppColors`, or `AppSpacing`
 
 If any required input is missing, ask one question or inspect the repo. Do not invent commands, paths, or platform architecture.
 
@@ -58,7 +62,8 @@ python3 mobile-superpowers/scripts/mobile_plan_scaffold.py \
   --platform "<Flutter|Android|iOS|React Native|mobile web>" \
   --spec "<approved-spec-path>" \
   --visual-contract "<visual-contract.md>" \
-  --assets "<assets.json>"
+  --assets "<assets.json>" \
+  --project-constraints "docs/mobile-superpowers/project-constraints.md"
 ```
 
 The helper creates the plan structure, Visual Artifacts section, Asset Implementation Matrix, and initial asset/UI tasks. Review and customize it against the repo before execution.
@@ -77,6 +82,7 @@ Every plan must start with:
 **Architecture:** <2-3 sentences>
 **Visual Baseline:** <path or "none">
 **Asset Manifest:** <path or "none">
+**Project Constraints:** <path or "none">
 **Verification Strategy:** <build/test/screenshot/golden plan>
 
 ---
@@ -201,6 +207,21 @@ Platform target examples:
 
 UI completion is blocked until asset outputs are present and visible in platform screenshots.
 
+## Project Component Contract
+
+If project constraints exist, include a section that maps UI needs to required base components and forbidden direct usage. Keep it compact and reference `docs/mobile-superpowers/project-constraints.md` instead of copying full project instructions.
+
+For Flutter plans, include this check when the project contract forbids raw platform primitives:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_component_contract_check.py \
+  --project-dir "<project-dir>" \
+  --platform flutter \
+  --contract "docs/mobile-superpowers/project-constraints.md"
+```
+
+If `CommonDialog`, `CommonText`, `CommonButton`, theme tokens, or other base-level components are required, every UI task must name where those components are used. HTML baseline semantics such as `data-platform-component="CommonText"` should be carried into platform implementation notes.
+
 ## Task Template
 
 ````markdown
@@ -270,8 +291,9 @@ Before presenting the plan, after the plan review loop:
 2. Visual coverage: visual contract items map to implementation or verification tasks.
 3. State coverage: mobile states are covered or explicitly non-goals.
 4. Platform commands: commands are real for this repo or clearly marked for confirmation.
-5. Placeholder scan: no TBD, TODO, "handle edge cases", or "write tests" without specifics.
-6. File consistency: names, paths, types, widgets, and components match across tasks.
+5. Project component contract: required base components and forbidden direct usage are represented in tasks and verification.
+6. Placeholder scan: no TBD, TODO, "handle edge cases", or "write tests" without specifics.
+7. File consistency: names, paths, types, widgets, and components match across tasks.
 
 ## Handoff
 
@@ -287,6 +309,7 @@ Do not start implementation unless the user asks to continue.
 - Ignoring visual contract paths
 - Treating compile success as UI completion
 - Omitting keyboard, safe area, loading, error, empty, dark mode, or accessibility states without naming them non-goals
+- Ignoring required project base components after the user asks to "接入该 skill"
 - Inventing platform commands
 - Writing vague steps like "implement UI" or "add tests"
 - Starting code during planning

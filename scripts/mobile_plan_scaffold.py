@@ -77,6 +77,7 @@ def plan_markdown(
     visual_contract: Path | None,
     assets_path: Path | None,
     assets: list[dict[str, Any]],
+    project_constraints: Path | None,
 ) -> str:
     visual_dir = visual_contract.parent if visual_contract else None
     baseline = visual_dir / "baseline.html" if visual_dir else None
@@ -92,6 +93,7 @@ def plan_markdown(
 **Architecture:** Follow existing repository patterns. Keep UI state, assets, and verification artifacts explicit in each task.
 **Visual Baseline:** `{baseline if baseline else "none"}`
 **Asset Manifest:** `{assets_path if assets_path else "none"}`
+**Project Constraints:** `{project_constraints if project_constraints else "none"}`
 **Verification Strategy:** Run platform tests/builds, capture a mobile screenshot, and compare against the HTML baseline and visual contract.
 
 ---
@@ -100,6 +102,7 @@ def plan_markdown(
 
 - Approved spec: `{spec}`
 - Visual contract: `{visual_contract if visual_contract else "none"}`
+- Project constraints: `{project_constraints if project_constraints else "none"}`
 
 ## File And Responsibility Map
 
@@ -120,6 +123,20 @@ def plan_markdown(
 - Must-fix visual differences: read from visual contract before implementation.
 
 {asset_matrix(platform, assets)}
+
+## Project Component Contract
+
+- Read project constraints before implementation: `{project_constraints if project_constraints else "none"}`.
+- Use project base components and tokens when required, such as `CommonText`, `CommonDialog`, `CommonButton`, `AppColors`, or `AppSpacing`.
+- Do not use direct platform primitives that the project forbids in feature UI files.
+- For Flutter, run this before UI completion when project constraints exist:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_component_contract_check.py \\
+  --project-dir "<project-dir>" \\
+  --platform flutter \\
+  --contract "{project_constraints if project_constraints else 'docs/mobile-superpowers/project-constraints.md'}"
+```
 
 ## Tasks
 
@@ -210,6 +227,7 @@ Expected: screenshot is saved and compared against the HTML baseline.
 - [ ] Every approved requirement maps to a task.
 - [ ] Every asset is classified and has a target path or explicit follow-up.
 - [ ] Visual contract differences are mapped to implementation or verification.
+- [ ] Project component contract is checked or explicitly marked non-applicable.
 - [ ] Platform commands are real for this repo or marked for confirmation.
 - [ ] No unresolved `review_placeholder` assets remain before UI implementation.
 """
@@ -223,16 +241,20 @@ def create_plan_scaffold(
     spec: str,
     visual_contract: Path | str | None = None,
     assets: Path | str | None = None,
+    project_constraints: Path | str | None = None,
     date: str | None = None,
 ) -> dict[str, Any]:
     project_dir = Path(project_dir).expanduser().resolve()
     visual_contract_path = Path(visual_contract).expanduser().resolve() if visual_contract else None
     assets_path = Path(assets).expanduser().resolve() if assets else None
+    project_constraints_path = Path(project_constraints).expanduser().resolve() if project_constraints else None
     errors: list[str] = []
     if visual_contract_path and not visual_contract_path.exists():
         errors.append(f"visual contract not found: {visual_contract_path}")
     if assets_path and not assets_path.exists():
         errors.append(f"assets manifest not found: {assets_path}")
+    if project_constraints_path and not project_constraints_path.exists():
+        errors.append(f"project constraints not found: {project_constraints_path}")
     day = date or date_type.today().isoformat()
     plan_dir = project_dir / "docs" / "mobile-superpowers" / "plans"
     plan_path = plan_dir / f"{day}-{slugify(feature)}.md"
@@ -249,6 +271,7 @@ def create_plan_scaffold(
             visual_contract=visual_contract_path,
             assets_path=assets_path,
             assets=loaded_assets,
+            project_constraints=project_constraints_path,
         ),
         encoding="utf-8",
     )
@@ -263,6 +286,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--spec", required=True)
     parser.add_argument("--visual-contract", type=Path, default=None)
     parser.add_argument("--assets", type=Path, default=None)
+    parser.add_argument("--project-constraints", type=Path, default=None)
     parser.add_argument("--date", default=None)
     parser.add_argument("--json", action="store_true", dest="json_output")
     return parser.parse_args()
@@ -277,6 +301,7 @@ def main() -> int:
         spec=args.spec,
         visual_contract=args.visual_contract,
         assets=args.assets,
+        project_constraints=args.project_constraints,
         date=args.date,
     )
     if args.json_output:

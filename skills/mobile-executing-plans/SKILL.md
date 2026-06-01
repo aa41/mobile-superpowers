@@ -33,6 +33,7 @@ Read the plan fully. Check:
 - Commands are real for this repo or marked for confirmation.
 - UI tasks include screenshot/golden/manual evidence.
 - Asset tasks are resolved before UI completion.
+- Project constraints exist when referenced, and required base components are named in UI tasks.
 
 If a plan has critical gaps, stop and ask for a plan update. Do not silently invent architecture, commands, assets, or platform targets.
 
@@ -60,7 +61,8 @@ For every plan task:
 5. Implement the smallest change that satisfies the task.
 6. Run the task's specified checks.
 7. Capture UI evidence when UI changed.
-8. Update the plan checkbox only after verification.
+8. Run the component contract check when the plan references project constraints.
+9. Update the plan checkbox only after verification.
 
 If a task is documentation-only or configuration-only, state why TDD does not apply and still run the closest validation.
 
@@ -95,6 +97,24 @@ If the plan includes an HTML baseline, use the relevant adapter:
 
 If the target device or simulator is unavailable, mark verification `BLOCKED` with the missing dependency. Do not claim visual fidelity.
 
+## Project Component Contract
+
+When `docs/mobile-superpowers/project-constraints.md` or a project style skill is referenced:
+
+- Read the compact constraints before editing UI files.
+- Use required base components and tokens, for example `CommonText`, `CommonDialog`, `CommonButton`, `AppColors`, or `AppSpacing`.
+- Keep direct platform primitives inside base component/theme folders when the project contract requires wrappers.
+- For Flutter, run:
+
+```bash
+python3 mobile-superpowers/scripts/mobile_component_contract_check.py \
+  --project-dir "<project-dir>" \
+  --platform flutter \
+  --contract "docs/mobile-superpowers/project-constraints.md"
+```
+
+If the checker reports violations, fix them or record an explicit exception approved by the user before claiming the UI task is complete.
+
 ## Step 6: Final Completion Gate
 
 Before saying the work is complete:
@@ -103,6 +123,7 @@ Before saying the work is complete:
 - Required tests/builds were run and results are reported.
 - UI changes have screenshots or a reason they could not be captured.
 - Visual contract deviations are listed.
+- Project component contract violations are fixed or explicitly approved.
 - Generated assets, screenshots, diffs, and reports are either intentionally saved or cleaned.
 - API keys and local config files are not staged.
 - Remaining risks are explicit.
@@ -127,6 +148,7 @@ Stop and ask when:
 - Editing before workspace isolation.
 - Treating a build pass as UI completion.
 - Skipping screenshots because the code "looks right".
+- Using raw `Text`, dialogs, buttons, or hard-coded colors after the plan requires project base components.
 - Marking a task done before its command runs.
 - Changing plan scope without updating the plan.
 - Leaving generated mobile artifacts or secrets unstaged/uncategorized.

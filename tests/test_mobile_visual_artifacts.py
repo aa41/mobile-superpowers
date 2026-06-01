@@ -106,6 +106,25 @@ class MobileVisualArtifactsTests(unittest.TestCase):
             (self.project_dir / "docs" / "mobile-superpowers" / "visual" / "2026-05-31-settings-screen").is_dir()
         )
 
+    def test_project_constraints_are_recorded_in_contract(self) -> None:
+        constraints = self.project_dir / "docs" / "mobile-superpowers" / "project-constraints.md"
+        constraints.parent.mkdir(parents=True)
+        constraints.write_text("# Mobile Project Constraints\n", encoding="utf-8")
+        module = load_module()
+
+        result = module.create_visual_workspace(
+            project_dir=self.project_dir,
+            topic="Profile",
+            date="2026-05-31",
+            project_constraints=constraints,
+        )
+
+        text = Path(result["artifacts"]["visual_contract"]).read_text(encoding="utf-8")
+        self.assertIn("## Project Constraints", text)
+        self.assertIn("project-constraints.md", text)
+        self.assertIn("data-platform-component", text)
+        self.assertEqual(result["artifacts"]["project_constraints"], str(constraints.resolve()))
+
 
 if __name__ == "__main__":
     unittest.main()
